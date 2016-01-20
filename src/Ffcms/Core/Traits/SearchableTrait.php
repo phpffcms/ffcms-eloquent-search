@@ -1,6 +1,6 @@
 <?php
 
-namespace Ffcms\Searchable;
+namespace Ffcms\Core\Traits;
 
 use Ffcms\Core\App;
 use Illuminate\Database\Eloquent\Builder;

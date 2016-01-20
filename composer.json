@@ -1,7 +1,7 @@
 {
-    "name": "nicolaslopezj/searchable",
+    "name": "phpffcms/searchable",
     "description": "Eloquent model search trait.",
-    "keywords": ["laravel", "eloquent", "search", "searchable", "database", "model"],
+    "keywords": ["ffcms", "eloquent", "search", "searchable", "database", "model"],
     "license": "MIT",
     "authors": [
         {
@@ -19,9 +19,7 @@
         "ext-mbstring": "*"
     },
     "autoload": {
-        "psr-4": {
-            "Ffcms\\Searchable\\": "src/"
-        }
+        "psr-0": { "Ffcms\\": "src/" }
     },
     "minimum-stability": "stable"
 }
