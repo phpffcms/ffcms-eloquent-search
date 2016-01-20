@@ -1,17 +1,21 @@
 {
-    "name": "phpffcms/searchable",
+    "name": "nicolaslopezj/searchable",
     "description": "Eloquent model search trait.",
-    "keywords": ["ffcms", "eloquent", "search", "searchable", "database", "model"],
+    "keywords": ["laravel", "eloquent", "search", "searchable", "database", "model"],
     "license": "MIT",
     "authors": [
         {
             "name": "Nicolas Lopez",
             "email": "nicolaslopezj@me.com"
+        },
+        {
+            "name": "Mihail Pyatinsky",
+            "email": "zenn1989@gmail.com"
         }
     ],
     "require": {
         "php": ">=5.4.0",
-        "illuminate/database": "~5.0",
+        "illuminate/database": "4.2.x|~5.0",
         "ext-mbstring": "*"
     },
     "autoload": {
