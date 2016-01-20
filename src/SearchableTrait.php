@@ -1,4 +1,6 @@
-<?php namespace Nicolaslopezj\Searchable;
+<?php
+
+namespace Ffcms\Searchable;
 
 use Ffcms\Core\App;
 use Illuminate\Database\Eloquent\Builder;
@@ -315,10 +317,12 @@ trait SearchableTrait
      */
     protected function mergeQueries(Builder $clone, Builder $original)
     {
+        $prefix = App::$Database->connection($this->connection)->getTablePrefix();
+        $tableName = $prefix . $this->getTable();
         if ($this->getDatabaseDriver() == 'pgsql') {
-            $original->from(App::$Database->connection($this->connection)->raw("({$clone->toSql()}) as {$this->getTable()}"));
+            $original->from(App::$Database->connection($this->connection)->raw("({$clone->toSql()}) as {$tableName}"));
         } else {
-            $original->from(App::$Database->connection($this->connection)->raw("({$clone->toSql()}) as `{$this->getTable()}`"));
+            $original->from(App::$Database->connection($this->connection)->raw("({$clone->toSql()}) as `{$tableName}`"));
         }
         $original->mergeBindings($clone->getQuery());
     }
