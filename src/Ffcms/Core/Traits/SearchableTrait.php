@@ -279,8 +279,9 @@ trait SearchableTrait
 
             $preparedWords[] = $word;
         }
-        if ($wordLimit !== null && Obj::isInt($wordLimit) && $wordLimit > 0)
-        $preparedWords = array_slice($preparedWords, 0, $wordLimit);
+        if ($wordLimit !== null && Obj::isInt($wordLimit) && $wordLimit > 0) {
+            $preparedWords = array_slice($preparedWords, 0, $wordLimit);
+        }
 
         foreach ($preparedWords as $word) {
             $cases[] = $this->getCaseCompare($column, $like_comparator, $relevance * $relevance_multiplier);
