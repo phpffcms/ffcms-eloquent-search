@@ -3,6 +3,7 @@
 namespace Ffcms\Core\Traits;
 
 use Ffcms\Core\App;
+use Ffcms\Core\Helper\Type\Obj;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Str;
@@ -28,16 +29,17 @@ trait SearchableTrait
      * @param \Illuminate\Database\Eloquent\Builder $q
      * @param string $search
      * @param float|null $threshold
+     * @param int|null $wordLimit
      * @param  boolean $entireText
      * @param  boolean $entireTextOnly
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function scopeSearch(Builder $q, $search, $threshold = null, $entireText = false, $entireTextOnly = false)
+    public function scopeSearch(Builder $q, $search, $threshold = null, $wordLimit = null, $entireText = false, $entireTextOnly = false)
     {
-        return $this->scopeSearchRestricted($q, $search, null, $threshold, $entireText, $entireTextOnly);
+        return $this->scopeSearchRestricted($q, $search, null, $threshold, $entireText, $entireTextOnly, $wordLimit);
     }
 
-    public function scopeSearchRestricted(Builder $q, $search, $restriction, $threshold = null, $entireText = false, $entireTextOnly = false)
+    public function scopeSearchRestricted(Builder $q, $search, $restriction, $threshold = null, $entireText = false, $entireTextOnly = false, $wordLimit = null)
     {
         $query = clone $q;
         $query->select($this->getTable() . '.*');
@@ -58,8 +60,8 @@ trait SearchableTrait
                 $queries = [];
             }
             if (($entireText === true && count($words) > 1) || $entireTextOnly === true) {
-                $queries[] = $this->getSearchQuery($query, $column, $relevance, [$search], 50, '', '');
-                $queries[] = $this->getSearchQuery($query, $column, $relevance, [$search], 30, '%', '%');
+                $queries[] = $this->getSearchQuery($query, $column, $relevance, [$search], 50, '', '', $wordLimit);
+                $queries[] = $this->getSearchQuery($query, $column, $relevance, [$search], 30, '%', '%', $wordLimit);
             }
             foreach ($queries as $select) {
                 $selects[] = $select;
@@ -257,14 +259,30 @@ trait SearchableTrait
      * @param float $relevance_multiplier
      * @param string $pre_word
      * @param string $post_word
+     * @param int|null $wordLimit
      * @return string
      */
-    protected function getSearchQuery(Builder $query, $column, $relevance, array $words, $relevance_multiplier, $pre_word = '', $post_word = '')
+    protected function getSearchQuery(Builder $query, $column, $relevance, array $words, $relevance_multiplier, $pre_word = '', $post_word = '', $wordLimit = null)
     {
         $like_comparator = $this->getDatabaseDriver() == 'pgsql' ? 'ILIKE' : 'LIKE';
         $cases = [];
 
+        // remove short words
+        $preparedWords = [];
         foreach ($words as $word) {
+            if (Str::length($word) < 3) {
+                continue;
+            }
+            if (Obj::isLikeInt($word)) {
+                continue;
+            }
+
+            $preparedWords[] = $word;
+        }
+        if ($wordLimit !== null && Obj::isInt($wordLimit) && $wordLimit > 0)
+        $preparedWords = array_slice($preparedWords, 0, $wordLimit);
+
+        foreach ($preparedWords as $word) {
             $cases[] = $this->getCaseCompare($column, $like_comparator, $relevance * $relevance_multiplier);
             $this->search_bindings[] = $pre_word . $word . $post_word;
         }
