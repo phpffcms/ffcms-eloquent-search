@@ -29,59 +29,82 @@ trait SearchableTrait
      * @param \Illuminate\Database\Eloquent\Builder $q
      * @param string $search
      * @param float|null $threshold
-     * @param int|null $wordLimit
      * @param  boolean $entireText
      * @param  boolean $entireTextOnly
      * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function scopeSearch(Builder $q, $search, $threshold = null, $wordLimit = null, $entireText = false, $entireTextOnly = false)
+    public function scopeSearch(Builder $q, $search, $threshold = null, $entireText = false, $entireTextOnly = false)
     {
-        return $this->scopeSearchRestricted($q, $search, null, $threshold, $entireText, $entireTextOnly, $wordLimit);
+        return $this->scopeSearchRestricted($q, $search, null, $threshold, $entireText, $entireTextOnly);
     }
 
-    public function scopeSearchRestricted(Builder $q, $search, $restriction, $threshold = null, $entireText = false, $entireTextOnly = false, $wordLimit = null)
+    public function scopeSearchRestricted(Builder $q, $search, $restriction, $threshold = null, $entireText = false, $entireTextOnly = false)
     {
         $query = clone $q;
         $query->select($this->getTable() . '.*');
         $this->makeJoins($query);
-        if (!$search) {
+
+        if ( ! $search)
+        {
             return $q;
         }
+
         $search = mb_strtolower(trim($search));
-        $words = explode(' ', $search);
+        preg_match_all('/(?:")((?:\\\\.|[^\\\\"])*)(?:")|(\S+)/', $search, $matches);
+        $words = $matches[1];
+        for ($i = 2; $i < count($matches); $i++) {
+            $words = array_filter($words) + $matches[$i];
+        }
+
         $selects = [];
         $this->search_bindings = [];
         $relevance_count = 0;
-        foreach ($this->getColumns() as $column => $relevance) {
+
+        foreach ($this->getColumns() as $column => $relevance)
+        {
             $relevance_count += $relevance;
+
             if (!$entireTextOnly) {
                 $queries = $this->getSearchQueriesForColumn($query, $column, $relevance, $words);
             } else {
                 $queries = [];
             }
-            if (($entireText === true && count($words) > 1) || $entireTextOnly === true) {
-                $queries[] = $this->getSearchQuery($query, $column, $relevance, [$search], 50, '', '', $wordLimit);
-                $queries[] = $this->getSearchQuery($query, $column, $relevance, [$search], 30, '%', '%', $wordLimit);
+
+            if ( ($entireText === true && count($words) > 1) || $entireTextOnly === true )
+            {
+                $queries[] = $this->getSearchQuery($query, $column, $relevance, [$search], 50, '', '');
+                $queries[] = $this->getSearchQuery($query, $column, $relevance, [$search], 30, '%', '%');
             }
-            foreach ($queries as $select) {
+
+            foreach ($queries as $select)
+            {
                 $selects[] = $select;
             }
         }
+
         $this->addSelectsToQuery($query, $selects);
+
         // Default the threshold if no value was passed.
         if (is_null($threshold)) {
             $threshold = $relevance_count / 4;
         }
+
         $this->filterQueryWithRelevance($query, $selects, $threshold);
+
         $this->makeGroupBy($query);
+
         $clone_bindings = $query->getBindings();
         $query->setBindings([]);
+
         $this->addBindingsToQuery($query, $this->search_bindings);
         $this->addBindingsToQuery($query, $clone_bindings);
-        if (is_callable($restriction)) {
+
+        if(is_callable($restriction)) {
             $query = $restriction($query);
         }
+
         $this->mergeQueries($query, $q);
+
         return $q;
     }
 
@@ -90,8 +113,7 @@ trait SearchableTrait
      *
      * @return array
      */
-    protected function getDatabaseDriver()
-    {
+    protected function getDatabaseDriver() {
         $config = App::$Properties->get('database');
         return $config['driver'];
     }
@@ -104,21 +126,20 @@ trait SearchableTrait
     protected function getColumns()
     {
         if (array_key_exists('columns', $this->searchable)) {
-            $prefix = App::$Database->connection($this->connection)->getTablePrefix();
             $columns = [];
-            foreach ($this->searchable['columns'] as $column => $priority) {
+            foreach($this->searchable['columns'] as $column => $priority){
                 $columns[$column] = $priority;
             }
             return $columns;
         } else {
-            return App::$Database->connection()->getSchemaBuilder()->getColumnListing($this->table);
+            return  App::$Database->getConnection()->getSchemaBuilder()->getColumnListing($this->table);
         }
     }
 
     /**
      * Returns whether or not to keep duplicates.
      *
-     * @return array
+     * @return array|false
      */
     protected function getGroupBy()
     {
@@ -181,7 +202,7 @@ trait SearchableTrait
             if ($driver == 'sqlsrv') {
                 $columns = $this->getTableColumns();
             } else {
-                $columns = $this->getTable() . '.' . $this->primaryKey;
+                $columns = $this->getTable() . '.' .$this->primaryKey;
             }
 
             $query->groupBy($columns);
@@ -221,7 +242,7 @@ trait SearchableTrait
     {
         $comparator = $this->getDatabaseDriver() != 'mysql' ? implode(' + ', $selects) : 'relevance';
 
-        $relevance_count = number_format($relevance_count, 2, '.', '');
+        $relevance_count=number_format($relevance_count,2,'.','');
 
         $query->havingRaw("$comparator >= $relevance_count");
         $query->orderBy('relevance', 'desc');
@@ -256,34 +277,19 @@ trait SearchableTrait
      * @param string $column
      * @param string $relevance
      * @param array $words
+     * @param string $compare
      * @param float $relevance_multiplier
      * @param string $pre_word
      * @param string $post_word
-     * @param int|null $wordLimit
      * @return string
      */
-    protected function getSearchQuery(Builder $query, $column, $relevance, array $words, $relevance_multiplier, $pre_word = '', $post_word = '', $wordLimit = null)
+    protected function getSearchQuery(Builder $query, $column, $relevance, array $words, $relevance_multiplier, $pre_word = '', $post_word = '')
     {
         $like_comparator = $this->getDatabaseDriver() == 'pgsql' ? 'ILIKE' : 'LIKE';
         $cases = [];
 
-        // remove short words
-        $preparedWords = [];
-        foreach ($words as $word) {
-            if (Str::length($word) < 3) {
-                continue;
-            }
-            if (Obj::isLikeInt($word)) {
-                continue;
-            }
-
-            $preparedWords[] = $word;
-        }
-        if ($wordLimit !== null && Obj::isInt($wordLimit) && $wordLimit > 0) {
-            $preparedWords = array_slice($preparedWords, 0, $wordLimit);
-        }
-
-        foreach ($preparedWords as $word) {
+        foreach ($words as $word)
+        {
             $cases[] = $this->getCaseCompare($column, $like_comparator, $relevance * $relevance_multiplier);
             $this->search_bindings[] = $pre_word . $word . $post_word;
         }
@@ -299,12 +305,12 @@ trait SearchableTrait
      * @param float $relevance
      * @return string
      */
-    protected function getCaseCompare($column, $compare, $relevance)
-    {
-        if ($this->getDatabaseDriver() == 'pgsql') {
+    protected function getCaseCompare($column, $compare, $relevance) {
+        if($this->getDatabaseDriver() == 'pgsql') {
             $field = "LOWER(" . $column . ") " . $compare . " ?";
             return '(case when ' . $field . ' then ' . $relevance . ' else 0 end)';
         }
+
         $column = str_replace('.', '`.`', $column);
         $field = "LOWER(`" . $column . "`) " . $compare . " ?";
         return '(case when ' . $field . ' then ' . $relevance . ' else 0 end)';
@@ -316,11 +322,10 @@ trait SearchableTrait
      * @param \Illuminate\Database\Eloquent\Builder $query
      * @param array $bindings
      */
-    protected function addBindingsToQuery(Builder $query, array $bindings)
-    {
+    protected function addBindingsToQuery(Builder $query, array $bindings) {
         $count = $this->getDatabaseDriver() != 'mysql' ? 2 : 1;
         for ($i = 0; $i < $count; $i++) {
-            foreach ($bindings as $binding) {
+            foreach($bindings as $binding) {
                 $type = $i == 1 ? 'select' : 'having';
                 $query->addBinding($binding, $type);
             }
@@ -333,14 +338,14 @@ trait SearchableTrait
      * @param \Illuminate\Database\Eloquent\Builder $clone
      * @param \Illuminate\Database\Eloquent\Builder $original
      */
-    protected function mergeQueries(Builder $clone, Builder $original)
-    {
+    protected function mergeQueries(Builder $clone, Builder $original) {
         $tableName = App::$Database->connection($this->connection)->getTablePrefix() . $this->getTable();
         if ($this->getDatabaseDriver() == 'pgsql') {
             $original->from(App::$Database->connection($this->connection)->raw("({$clone->toSql()}) as {$tableName}"));
         } else {
             $original->from(App::$Database->connection($this->connection)->raw("({$clone->toSql()}) as `{$tableName}`"));
         }
+
         $original->setBindings(
             array_merge_recursive(
                 $clone->getBindings(),
@@ -349,3 +354,4 @@ trait SearchableTrait
         );
     }
 }
+
