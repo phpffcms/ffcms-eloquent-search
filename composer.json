@@ -1,25 +1,33 @@
 {
-    "name": "phpffcms/searchable",
-    "description": "Eloquent model search trait.",
-    "keywords": ["ffcms", "eloquent", "search", "searchable", "database", "model"],
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "Nicolas Lopez",
-            "email": "nicolaslopezj@me.com"
-        },
-        {
-            "name": "Mihail Pyatinsky",
-            "email": "zenn1989@gmail.com"
-        }
-    ],
-    "require": {
-        "php": ">=5.4.0",
-        "illuminate/database": "4.2.x|~5.0",
-        "ext-mbstring": "*"
+  "name": "phpffcms/searchable",
+  "description": "Eloquent model search trait.",
+  "keywords": [
+    "ffcms",
+    "eloquent",
+    "search",
+    "searchable",
+    "database",
+    "model"
+  ],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Nicolas Lopez",
+      "email": "nicolaslopezj@me.com"
     },
-    "autoload": {
-        "psr-0": { "Ffcms\\": "src/" }
-    },
-    "minimum-stability": "stable"
+    {
+      "name": "Mihail Pyatinsky",
+      "email": "zenn1989@gmail.com"
+    }
+  ],
+  "require": {
+    "php": ">=7.1",
+    "illuminate/database": "4.2.x|~5.0",
+    "ext-mbstring": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Ffcms\\Core": "src/"
+    }
+  }
 }

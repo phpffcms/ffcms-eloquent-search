@@ -3,7 +3,6 @@
 namespace Ffcms\Core\Traits;
 
 use Ffcms\Core\App;
-use Ffcms\Core\Helper\Type\Obj;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Str;
