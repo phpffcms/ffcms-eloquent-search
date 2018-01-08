@@ -27,7 +27,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Ffcms\\Core": "src/"
+      "Ffcms\\Core\\": "src/"
     }
   }
 }
