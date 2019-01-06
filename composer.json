@@ -1,5 +1,5 @@
 {
-  "name": "phpffcms/searchable",
+  "name": "phpffcms/ffcms-eloquent-search",
   "description": "Eloquent model search trait.",
   "keywords": [
     "ffcms",
@@ -22,7 +22,7 @@
   ],
   "require": {
     "php": ">=7.1",
-    "illuminate/database": "4.2.x|~5.0",
+    "illuminate/database": ">5.0",
     "ext-mbstring": "*"
   },
   "autoload": {
