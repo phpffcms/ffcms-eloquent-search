@@ -1,4 +1,6 @@
-<?php namespace Nicolaslopezj\Searchable;
+<?php 
+
+namespace Ffcms\Core;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
@@ -110,8 +112,8 @@ trait SearchableTrait
      * @return array
      */
     protected function getDatabaseDriver() {
-        $key = $this->connection ?: Config::get('database.default');
-        return Config::get('database.connections.' . $key . '.driver');
+        $config = App::$Properties->get('database');
+        return $config['driver'];
     }
 
     /**
@@ -122,15 +124,13 @@ trait SearchableTrait
     protected function getColumns()
     {
         if (array_key_exists('columns', $this->searchable)) {
-            $driver = $this->getDatabaseDriver();
-            $prefix = Config::get("database.connections.$driver.prefix");
             $columns = [];
             foreach($this->searchable['columns'] as $column => $priority){
-                $columns[$prefix . $column] = $priority;
+                $columns[$column] = $priority;
             }
             return $columns;
         } else {
-            return DB::connection()->getSchemaBuilder()->getColumnListing($this->table);
+            return  App::$Database->getConnection()->getSchemaBuilder()->getColumnListing($this->table);
         }
     }
 
@@ -352,11 +352,11 @@ trait SearchableTrait
      * @param \Illuminate\Database\Eloquent\Builder $original
      */
     protected function mergeQueries(Builder $clone, Builder $original) {
-        $tableName = DB::connection($this->connection)->getTablePrefix() . $this->getTable();
+        $tableName = App::$Database->connection($this->connection)->getTablePrefix() . $this->getTable();
         if ($this->isPostgresqlDatabase()) {
-            $original->from(DB::connection($this->connection)->raw("({$clone->toSql()}) as {$tableName}"));
+            $original->from(App::$Database->connection($this->connection)->raw("({$clone->toSql()}) as {$tableName}"));
         } else {
-            $original->from(DB::connection($this->connection)->raw("({$clone->toSql()}) as `{$tableName}`"));
+            $original->from(App::$Database->connection($this->connection)->raw("({$clone->toSql()}) as `{$tableName}`"));
         }
 
         // First create a new array merging bindings

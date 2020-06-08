@@ -14,7 +14,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Nicolaslopezj\\Searchable\\": "src/"
+            "Ffcms\\Core\\": "src/"
         }
     },
     "minimum-stability": "stable"
