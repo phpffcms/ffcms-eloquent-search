@@ -5,6 +5,7 @@ namespace Ffcms\Core\Traits;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use Ffcms\Core\App;
 
 /**
  * Trait SearchableTrait
