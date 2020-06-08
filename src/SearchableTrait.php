@@ -1,11 +1,9 @@
 <?php 
 
-namespace Ffcms\Core;
+namespace Ffcms\Core\Traits;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
